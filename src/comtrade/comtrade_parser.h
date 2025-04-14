@@ -12,7 +12,7 @@ namespace comtrade {
 /**
 * Исключение выводимое при несоотвествии введенного значения ограничения стандарта IEC COMTRADE
 */
-const std::string EXCEPTION_FOR_INIT_PARAM = "Inappropriate value!"; 
+const std::string kExceptionForInitParam = "Inappropriate value!"; 
 
 /**
   * Данная функция проверяет вводимое значение типа std::string для инициализации атрибута класса 
@@ -22,9 +22,9 @@ const std::string EXCEPTION_FOR_INIT_PARAM = "Inappropriate value!";
   * @param var вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param указатель на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   */
-inline void con_for_string(bool con, std::string var, std::string* param) {
+inline void ConForString(bool con, std::string var, std::string* param) {
   if(con) *param = var;
-  else throw EXCEPTION_FOR_INIT_PARAM;
+  else throw kExceptionForInitParam;
 }
 /**
   * Данная функция проверяет вводимое значение типа int32_t для инициализации атрибута класса 
@@ -34,9 +34,9 @@ inline void con_for_string(bool con, std::string var, std::string* param) {
   * @param var вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param указатель на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   */
-inline void con_for_int32(bool con, int32_t var, int32_t* param) {
+inline void ConForInt32(bool con, int32_t var, int32_t* param) {
   if(con) *param = var;
-  else throw EXCEPTION_FOR_INIT_PARAM;
+  else throw kExceptionForInitParam;
 }
 /**
   * Данная функция проверяет вводимое значение типа float для инициализации атрибута класса 
@@ -46,9 +46,9 @@ inline void con_for_int32(bool con, int32_t var, int32_t* param) {
   * @param var вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param указатель на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   */
-inline void con_for_float(bool con, float var, float* param) {
+inline void ConForFloat(bool con, float var, float* param) {
   if(con) *param = var;
-  else throw EXCEPTION_FOR_INIT_PARAM;
+  else throw kExceptionForInitParam;
 }
 /**
   * Данная функция проверяет вводимое значение типа char для инициализации атрибута класса 
@@ -58,9 +58,9 @@ inline void con_for_float(bool con, float var, float* param) {
   * @param var вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param указатель на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   */
-inline void con_for_char(bool con, char var, char* param) {
+inline void ConForChar(bool con, char var, char* param) {
   if(con) *param = var;
-  else throw EXCEPTION_FOR_INIT_PARAM;
+  else throw kExceptionForInitParam;
 }
 
 class ComtradeParser {
@@ -75,16 +75,16 @@ class Signals {
   std::vector<AnalogSignal> analog_vector; // Вектор состоящий из аналоговых сигналов
   std::vector<DigitalSignal> digital_vector; // Вектор состоящий из цифровых сигналов
  public: 
-  void push_analog(AnalogSignal signal) {
+  void PushAnalog(AnalogSignal signal) {
     analog_vector.push_back(signal);
   }
-  void push_digital(DigitalSignal signal) {
+  void PushDigital(DigitalSignal signal) {
     digital_vector.push_back(signal);
   }
-  AnalogSignal get_analog_signal(int32_t An) {
+  AnalogSignal GetAnalogSignal(int32_t An) {
     return analog_vector[An];
   }
-  DigitalSignal get_digital_signal(int32_t Dn) {
+  DigitalSignal GetDigitalSignal(int32_t Dn) {
     return digital_vector[Dn];
   }
 };
@@ -123,59 +123,59 @@ class AnalogSignal {
   AnalogSignal(int32_t An, std::string ch_id, std::string uu, float a, float b, 
                float skew, float min, float max, float primary, float secondary, 
                char PS, std::string ph="", std::string ccbm="") {
-    con_for_int32((An > 0 && An <= 999999), An, &An_); 
-    con_for_string((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
-    con_for_string((ph.length() <= 2), ph, &ph_);
-    con_for_string((ccbm.length() <= 64), ccbm, &ccbm_);
-    con_for_string((uu.length() > 0 && uu.length() <= 32), uu, &uu_);
+    ConForInt32((An > 0 && An <= 999999), An, &An_); 
+    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
+    ConForString((ph.length() <= 2), ph, &ph_);
+    ConForString((ccbm.length() <= 64), ccbm, &ccbm_);
+    ConForString((uu.length() > 0 && uu.length() <= 32), uu, &uu_);
     a_ = a;
     b_ = b;
     skew_ = skew;
-    if(min > max) throw EXCEPTION_FOR_INIT_PARAM;
-    con_for_float((min > -3.4028236e38 && min < 3.4028236e38), min, &min_);
-    con_for_float((max > -3.4028236e38 && max < 3.4028236e38), max, &max_);
+    if(min > max) throw kExceptionForInitParam;
+    ConForFloat((min > -3.4028236e38 && min < 3.4028236e38), min, &min_);
+    ConForFloat((max > -3.4028236e38 && max < 3.4028236e38), max, &max_);
     primary_ = primary;
     secondary_ = secondary;
-    con_for_char((PS == 'P' || PS == 'p' || PS == 'S' || PS == 's'), PS, &PS_);
+    ConForChar((PS == 'P' || PS == 'p' || PS == 'S' || PS == 's'), PS, &PS_);
   }
 
-  int32_t get_An() {
+  int32_t GetAn() {
     return An_;
   }
-  std::string get_ch_id() {
+  std::string GetChId() {
     return ch_id_;
   }
-  std::string get_uu() {
+  std::string GetUu() {
     return uu_;
   }
-  float get_a() {
+  float GetA() {
     return a_;
   }
-  float get_b() {
+  float GetB() {
     return b_;
   } 
-  float get_skew() {
+  float GetSkew() {
     return skew_;
   }
-  float get_min() {
+  float GetMin() {
     return min_;
   }
-  float get_max() {
+  float GetMax() {
     return max_;
   }
-  float get_primary() {
+  float GetPrimary() {
     return primary_;
   }
-  float get_secondary() {
+  float GetSecondary() {
     return secondary_;
   } 
-  char get_PS() {
+  char GetPS() {
     return PS_;
   }
-  std::string get_ph() {
+  std::string GetPh() {
     return ph_;
   }
-  std::string get_ccbm() {
+  std::string GetCcbm() {
     return ccbm_;
   }
 };
@@ -192,26 +192,26 @@ class DigitalSignal {
   bool y_; // Нормальное состояние канала состояния. Критичные данные, целое число (0/1)
  public:
   DigitalSignal(int32_t Dn, std::string ch_id, bool y, std::string ph="", std::string ccbm="") {
-    con_for_int32((Dn > 0 && Dn <= 999999), Dn, &Dn_);
-    con_for_string((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
-    con_for_string((ph.length() <= 2), ph, &ph_);
-    con_for_string((ccbm.length() <= 64), ccbm, &ccbm_);
+    ConForInt32((Dn > 0 && Dn <= 999999), Dn, &Dn_);
+    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
+    ConForString((ph.length() <= 2), ph, &ph_);
+    ConForString((ccbm.length() <= 64), ccbm, &ccbm_);
     y_ = y;
   }
 
-  int32_t get_Dn() {
+  int32_t GetDn() {
     return Dn_;
   }
-  std::string get_ch_id() {
+  std::string GetChId() {
     return ch_id_;
   }
-  bool get_y() {
+  bool GetY() {
     return y_;
   }
-  std::string get_ph() {
+  std::string GetPh() {
     return ph_;
   }
-  std::string get_ccbm() {
+  std::string GetCcbm() {
     return ccbm_;
   }
 };
