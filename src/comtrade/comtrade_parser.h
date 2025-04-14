@@ -3,6 +3,7 @@
 //
 #include <string>
 #include <vector>
+#include <limits>
 
 #ifndef COMTRADE_PARSER_H
 #define COMTRADE_PARSER_H
@@ -22,9 +23,9 @@ const std::string kExceptionForInitParam = "Inappropriate value!";
   * @param var вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param указатель на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   */
-inline void ConForString(bool con, std::string var, std::string* param) {
-  if(con) *param = var;
-  else throw kExceptionForInitParam;
+inline void ConForString(bool con, const std::string& var, std::string& param) {
+  if(con) param = var;
+  else throw std::invalid_argument("Invalid value!");
 }
 /**
   * Данная функция проверяет вводимое значение типа int32_t для инициализации атрибута класса 
@@ -38,6 +39,28 @@ inline void ConForInt32(bool con, int32_t var, int32_t* param) {
   if(con) *param = var;
   else throw kExceptionForInitParam;
 }
+
+void CheckParam(float value, float& out,
+  float min_value = std::numeric_limits<float>::min(),
+  float max_value = std::numeric_limits<float>::max()) {
+  if (value >= min_value && value <= max_value) {
+    out = value;
+  } else {
+    throw std::out_of_range("Float value out of range!");
+  }
+}
+
+void CheckParam(int32_t value, int32_t& out,
+  int32_t min_value = std::numeric_limits<int32_t>::min(),
+  int32_t max_value = std::numeric_limits<int32_t>::min()) {
+  if (value > min_value && value < max_value) {
+    out = value;
+  } else {
+    throw std::out_of_range("Float value out of range!");
+  }
+}
+
+
 /**
   * Данная функция проверяет вводимое значение типа float для инициализации атрибута класса 
   * AnalogSignal или DigitalSignal на соотвествие ограничениям стандарта IEC COMTRADE
@@ -66,27 +89,6 @@ inline void ConForChar(bool con, char var, char* param) {
 class ComtradeParser {
  public:
   ComtradeParser();
-};
-
-/**
- * Класс создает вектор аналоговых сигналов и вектор цифровых сигналов
- */
-class Signals {
-  std::vector<AnalogSignal> analog_vector; // Вектор состоящий из аналоговых сигналов
-  std::vector<DigitalSignal> digital_vector; // Вектор состоящий из цифровых сигналов
- public: 
-  void PushAnalog(AnalogSignal signal) {
-    analog_vector.push_back(signal);
-  }
-  void PushDigital(DigitalSignal signal) {
-    digital_vector.push_back(signal);
-  }
-  AnalogSignal GetAnalogSignal(int32_t An) {
-    return analog_vector[An];
-  }
-  DigitalSignal GetDigitalSignal(int32_t Dn) {
-    return digital_vector[Dn];
-  }
 };
 
 /**
@@ -123,17 +125,17 @@ class AnalogSignal {
   AnalogSignal(int32_t An, std::string ch_id, std::string uu, float a, float b, 
                float skew, float min, float max, float primary, float secondary, 
                char PS, std::string ph="", std::string ccbm="") {
-    ConForInt32((An > 0 && An <= 999999), An, &An_); 
-    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
-    ConForString((ph.length() <= 2), ph, &ph_);
-    ConForString((ccbm.length() <= 64), ccbm, &ccbm_);
-    ConForString((uu.length() > 0 && uu.length() <= 32), uu, &uu_);
+    CheckParam(An,An_, 0, 9999);
+    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, ch_id_);
+    ConForString((ph.length() <= 2), ph, ph_);
+    ConForString((ccbm.length() <= 64), ccbm, ccbm_);
+    ConForString((uu.length() > 0 && uu.length() <= 32), uu, uu_);
     a_ = a;
     b_ = b;
     skew_ = skew;
     if(min > max) throw kExceptionForInitParam;
     ConForFloat((min > -3.4028236e38 && min < 3.4028236e38), min, &min_);
-    ConForFloat((max > -3.4028236e38 && max < 3.4028236e38), max, &max_);
+    ConForFloat((max > -3.4028236e38F && max < 3.4028236e38F), max, &max_);
     primary_ = primary;
     secondary_ = secondary;
     ConForChar((PS == 'P' || PS == 'p' || PS == 'S' || PS == 's'), PS, &PS_);
@@ -193,9 +195,9 @@ class DigitalSignal {
  public:
   DigitalSignal(int32_t Dn, std::string ch_id, bool y, std::string ph="", std::string ccbm="") {
     ConForInt32((Dn > 0 && Dn <= 999999), Dn, &Dn_);
-    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, &ch_id_);
-    ConForString((ph.length() <= 2), ph, &ph_);
-    ConForString((ccbm.length() <= 64), ccbm, &ccbm_);
+    ConForString((ch_id.length() > 0 && ch_id.length() <= 128), ch_id, ch_id_);
+    ConForString((ph.length() <= 2), ph, ph_);
+    ConForString((ccbm.length() <= 64), ccbm, ccbm_);
     y_ = y;
   }
 
@@ -213,6 +215,28 @@ class DigitalSignal {
   }
   std::string GetCcbm() {
     return ccbm_;
+  }
+};
+
+/**
+ * Класс создает вектор аналоговых сигналов и вектор цифровых сигналов
+ */
+class ComtradeFile {
+
+  std::vector<AnalogSignal> analog_vector; // Вектор состоящий из аналоговых сигналов
+  std::vector<DigitalSignal> digital_vector; // Вектор состоящий из цифровых сигналов
+public:
+  void PushAnalog(const AnalogSignal& signal) {
+    analog_vector.push_back(signal);
+  }
+  void PushDigital(DigitalSignal signal) {
+    digital_vector.push_back(signal);
+  }
+  const AnalogSignal& GetAnalogSignal(std::size_t an) {
+    return analog_vector.at(an);
+  }
+  DigitalSignal GetDigitalSignal(int32_t Dn) {
+    return digital_vector[Dn];
   }
 };
 
