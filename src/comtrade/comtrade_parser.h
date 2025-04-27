@@ -14,7 +14,7 @@ namespace comtrade {
 
 const std::set<char> kSetPS {'P', 'p', 'S', 's'}; // Множество возможных значений атрибута PS
 const std::set<std::string> kSetRevYear {"1991", "1999", "2013"}; // Множество возможных значений атрибута rev_year
-const std::set<std::string> kSetFt {"ASCII", "binary", "binary32", "float32"}; // Множество возможных значений атрибута ft
+const std::set<std::string> kSetFt {"ascii", "binary", "binary32", "float32"}; // Множество возможных значений атрибута ft
 
 
 /**
@@ -139,7 +139,9 @@ inline void CompareParam(const std::string& value, std::string& param,
   if(value == "" && default_val) {
     return;
   }
-  if(keys.count(value)) {
+  std::string copy_val = value;
+  std::transform(copy_val.begin(), copy_val.end(), copy_val.begin(), ::tolower);
+  if(keys.count(copy_val)) {
     param = value;
   } else {
     throw std::invalid_argument("Inappropriate value!");
@@ -162,16 +164,18 @@ class TimeMark {
   int32_t year_;
   int8_t hours_;
   int8_t minutes_;
-  float seconds_;
+  int8_t seconds_;
+  int64_t mcseconds_;
  public:
   TimeMark();
-  TimeMark(int8_t day, int8_t month, int32_t year, int8_t hours, int8_t minutes, float seconds) {
+  TimeMark(int8_t day, int8_t month, int32_t year, int8_t hours, int8_t minutes, int8_t seconds, int64_t mcseconds) {
     CheckParam(day, day_, 1, 31);
     CheckParam(month, month_, 1, 12);
     CheckParam(year, year_, 1900, 9999);
     CheckParam(hours, hours_, 0, 23);
     CheckParam(minutes, minutes_, 0, 59);
-    CheckParam(seconds, seconds_, .0f, 59.999999999f);
+    CheckParam(seconds, seconds_, 0, 59);
+    CheckParam(mcseconds, mcseconds_, 0, 999999999);
   }
 
   const int8_t& GetDay() const {  
@@ -189,8 +193,11 @@ class TimeMark {
   const int8_t& GetMinutes() const {  
     return minutes_;  
   }
-  const float& GetSeconds() const {  
+  const int8_t& GetSeconds() const {  
     return seconds_;
+  }
+  const int64_t& GetMcSeconds() const {  
+    return mcseconds_;
   }
 };
 
