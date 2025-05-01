@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Add an executable
 add_executable(signal_mapper
         src/main.cpp
+        src/comtrade/comtrade.cpp
         src/comtrade/comtrade_parser.cpp)
 target_include_directories(signal_mapper PUBLIC src)
 
