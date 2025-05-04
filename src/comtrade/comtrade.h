@@ -13,6 +13,16 @@
 namespace comtrade {
 
 /**
+ * Исключение для обработки ошибок, связанных с парсингом файлов стандарта Comtrade
+ */
+class ParseException {
+  std::string message;
+ public: 
+  ParseException(std::string message): message{message}{}
+  std::string what() const {return message;}
+};
+
+/**
  * Класс для хранения даты и времени
  */
 class TimeMark {

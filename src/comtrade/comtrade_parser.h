@@ -8,9 +8,17 @@
 
 namespace comtrade {
 
+/**
+ * Класс для парсинга файлов стандарта Comtrade
+ */
 class ComtradeParser {
-  public:
-    ComtradeFile GenerateComtradeParser(const std::string& file_name);
+ public:
+  /**
+   * Функция парсит объект типа ComtradeFile из файла .CFG стандарта IEC COMTRADE
+   * @param адрес файла .CFG стандарта IEC COMTRADE
+   * @return объект типа std::optional<ComtradeFile>
+   */
+  static std::optional<ComtradeFile> Parse(const std::string& file_name);
 };
 
 } // comtrade

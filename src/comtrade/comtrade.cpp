@@ -23,14 +23,10 @@ const std::set<std::string> kSetFt {"ascii", "binary", "binary32", "float32"}; /
 inline void CheckParam(const std::string& value, std::string& param, 
                        size_t min_value = std::numeric_limits<uint8_t>::min(),
                        size_t max_value = std::numeric_limits<uint8_t>::max()) {
-  try {
-    if (value.length() >= min_value && value.length() <= max_value) {
-      param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if (value.length() >= min_value && value.length() <= max_value) {
+    param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -44,14 +40,10 @@ inline void CheckParam(const std::string& value, std::string& param,
 inline void CheckParam(const int8_t& value, int8_t& param,
                        int8_t min_value = std::numeric_limits<int8_t>::min(),
                        int8_t max_value = std::numeric_limits<int8_t>::max()) { 
-  try {
-    if (value >= min_value && value <= max_value) {
-    param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if (value >= min_value && value <= max_value) {
+  param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -65,14 +57,10 @@ inline void CheckParam(const int8_t& value, int8_t& param,
 inline void CheckParam(const int32_t& value, int32_t& param,
                        int32_t min_value = std::numeric_limits<int32_t>::min(),
                        int32_t max_value = std::numeric_limits<int32_t>::max()) {  
-  try {
-    if (value >= min_value && value <= max_value) {
-      param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if (value >= min_value && value <= max_value) {
+    param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -86,14 +74,10 @@ inline void CheckParam(const int32_t& value, int32_t& param,
 inline void CheckParam(const int64_t& value, int64_t& param,
                        int64_t min_value = std::numeric_limits<int64_t>::min(),
                        int64_t max_value = std::numeric_limits<int64_t>::max()) {
-  try {
-    if (value >= min_value && value <= max_value) {
-    param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if (value >= min_value && value <= max_value) {
+  param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -107,14 +91,10 @@ inline void CheckParam(const int64_t& value, int64_t& param,
 inline void CheckParam(const float& value, float& param,
                        float min_value = std::numeric_limits<float>::max(),
                        float max_value = std::numeric_limits<float>::max()) {
-  try {
-    if (value >= (-1.f * min_value) && value <= max_value) {
-      param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if (value >= (-1.f * min_value) && value <= max_value) {
+    param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -125,14 +105,10 @@ inline void CheckParam(const float& value, float& param,
   * @param keys множество допустимых значений атрибута типа char
   */
 inline void CompareParam(const char& value, char& param, const std::set<char>& keys) {
-  try {
-    if(keys.count(value)) {
-      param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if(keys.count(value)) {
+    param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 /**
@@ -145,67 +121,76 @@ inline void CompareParam(const char& value, char& param, const std::set<char>& k
   */
 inline void CompareParam(const std::string& value, std::string& param, 
                          const std::set<std::string>& keys, bool default_val=false) {
-  try {
-    if(value == "" && default_val) {
-      return;
-    }
-    std::string copy_val = value;
-    std::transform(copy_val.begin(), copy_val.end(), copy_val.begin(), ::tolower);
-    if(keys.count(copy_val)) {
-      param = value;
-    } else {
-      throw std::invalid_argument("Inappropriate value!");
-    }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+  if(value == "" && default_val) {
+    return;
+  }
+  std::string copy_val = value;
+  std::transform(copy_val.begin(), copy_val.end(), copy_val.begin(), ::tolower);
+  if(keys.count(copy_val)) {
+    param = value;
+  } else {
+    throw std::invalid_argument("Inappropriate value!");
   }
 }
 
 
 TimeMark::TimeMark(int8_t day, int8_t month, int32_t year, int8_t hours, 
                    int8_t minutes, int8_t seconds, int64_t mcseconds) {
-  CheckParam(day, day_, 1, 31);
-  CheckParam(month, month_, 1, 12);
-  CheckParam(year, year_, 1900, 9999);
-  CheckParam(hours, hours_, 0, 23);
-  CheckParam(minutes, minutes_, 0, 59);
-  CheckParam(seconds, seconds_, 0, 59);
-  CheckParam(mcseconds, mcseconds_, 0, 999999999);
+  try {
+    CheckParam(day, day_, 1, 31);
+    CheckParam(month, month_, 1, 12);
+    CheckParam(year, year_, 1900, 9999);
+    CheckParam(hours, hours_, 0, 23);
+    CheckParam(minutes, minutes_, 0, 59);
+    CheckParam(seconds, seconds_, 0, 59);
+    CheckParam(mcseconds, mcseconds_, 0, 999999999);
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Exception invalid_argument: " << e.what() << " Datatime problem" << std::endl;
+    throw ParseException("Creating object error!");
+  }
 }
 
 
 AnalogSignal::AnalogSignal(int32_t An, const std::string& ch_id, const std::string& ph, const std::string& ccbm, 
                            const std::string& uu, float a, float b, float skew, float min, float max, 
                            float primary, float secondary, char PS) {
-  CheckParam(An, An_, 1, 999999); 
-  CheckParam(ch_id, ch_id_, 1, 128);
-  CheckParam(ph, ph_, 0, 2);
-  CheckParam(ccbm, ccbm_, 0, 64);
-  CheckParam(uu, uu_, 1, 32);
-  a_ = a;
-  b_ = b;
-  skew_ = skew;
   try {
-    if(min > max) {
-      throw std::invalid_argument("Inappropriate value!");
-    }
+    CheckParam(An, An_, 1, 999999); 
+    CheckParam(ch_id, ch_id_, 1, 128);
+    CheckParam(ph, ph_, 0, 2);
+    CheckParam(ccbm, ccbm_, 0, 64);
+    CheckParam(uu, uu_, 1, 32);
+    a_ = a;
+    b_ = b;
+    skew_ = skew;  
+    // if(min > max) {
+    //   throw std::invalid_argument("Min/max problem!");
+    // }
+    CheckParam(min, min_);
+    CheckParam(max, max_);
+    primary_ = primary;
+    secondary_ = secondary;
+    CompareParam(PS, PS_, kSetPS);
   } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
+    std::cerr << "Exception invalid_argument: " << e.what() << " Number of analog signal: " 
+    << An << std::endl;
+    throw ParseException("Creating object error!");
   }
-  CheckParam(min, min_);
-  CheckParam(max, max_);
-  primary_ = primary;
-  secondary_ = secondary;
-  CompareParam(PS, PS_, kSetPS);
 }
 
 
 DigitalSignal::DigitalSignal(int32_t Dn, const std::string& ch_id, const std::string& ph, const std::string& ccbm, bool y) {
-  CheckParam(Dn, Dn_, 1, 999999);
-  CheckParam(ch_id, ch_id_, 1, 128);
-  CheckParam(ph, ph_, 0, 2);
-  CheckParam(ccbm, ccbm_, 0, 64);
-  y_ = y;
+  try {
+    CheckParam(Dn, Dn_, 1, 999999);
+    CheckParam(ch_id, ch_id_, 1, 128);
+    CheckParam(ph, ph_, 0, 2);
+    CheckParam(ccbm, ccbm_, 0, 64);
+    y_ = y;
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Exception invalid_argument: " << e.what() << " Number of digtal signal: " 
+    << Dn << std::endl;
+    throw ParseException("Creating object error!");
+  }
 }
 
 
@@ -227,34 +212,45 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
                            const std::string& local_code,
                            int8_t tmq_code,
                            int8_t leapsec) {
-  CheckParam(station_name, station_name_, 0, 64);
-  CheckParam(rec_dev_id, rec_dev_id_, 0, 64);
-  CompareParam(rev_year, rev_year_, kSetRevYear, true);
+  size_t str_counter_for_exceptions = 2;
   try {
+    CheckParam(station_name, station_name_, 0, 64);
+    CheckParam(rec_dev_id, rec_dev_id_, 0, 64);
+    CompareParam(rev_year, rev_year_, kSetRevYear, true);
+    str_counter_for_exceptions++;
     if(TT != analog_count + digital_count) {
       throw std::invalid_argument("Inappropriate count of analog or digital signals!");
     }
-  } catch (const std::invalid_argument& e) {
-    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
-  }
-  CheckParam(TT, TT_, 1, 999999);
-  CheckParam(analog_count, analog_count_, 0, 999999);
-  CheckParam(digital_count, digital_count_, 0, 999999);
-  CheckParam(lf, lf_);
-  CheckParam(nrates, nrates_, 0, 999);
-  CheckParam(samp, samp_);
-  CheckParam(endsamp, endsamp_, 1, 9999999999);
-  time_start_ = time_start;
-  trigger_point_ = trigger_point;
-  CompareParam(ft, ft_, kSetFt);
-  CheckParam(timemult, timemult_);
-  CheckParam(time_code, time_code_);
-  CheckParam(local_code, local_code_);
-  CheckParam(tmq_code, tmq_code_, 0, 16);
-  CheckParam(leapsec, leapsec_, 0, 3);
+    CheckParam(TT, TT_, 1, 999999);
+    CheckParam(analog_count, analog_count_, 0, 999999);
+    CheckParam(digital_count, digital_count_, 0, 999999);
+    str_counter_for_exceptions += TT_ + 3;
+    CheckParam(lf, lf_);
+    str_counter_for_exceptions++;
+    CheckParam(nrates, nrates_, 0, 999);
+    str_counter_for_exceptions++;
+    CheckParam(samp, samp_);
+    CheckParam(endsamp, endsamp_, 1, 9999999999);
+    str_counter_for_exceptions++;
+    time_start_ = time_start;
+    trigger_point_ = trigger_point;
+    CompareParam(ft, ft_, kSetFt);
+    str_counter_for_exceptions++;
+    CheckParam(timemult, timemult_);
+    str_counter_for_exceptions++;
+    CheckParam(time_code, time_code_);
+    CheckParam(local_code, local_code_);
+    str_counter_for_exceptions++;
+    // CheckParam(tmq_code, tmq_code_, 0, 16);
+    // CheckParam(leapsec, leapsec_, 0, 3);
 
-  analog_vector.reserve(analog_count);
-  digital_vector.reserve(digital_count);
+    analog_vector.reserve(analog_count);
+    digital_vector.reserve(digital_count);
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Exception invalid_argument: " << e.what() << " Number of line " 
+    << str_counter_for_exceptions << std::endl;
+    throw ParseException("Creating object error!");
+  }
 }
 
 } // comtrade
