@@ -12,15 +12,6 @@
 
 namespace comtrade {
 
-/**
- * Исключение для обработки ошибок, связанных с парсингом файлов стандарта Comtrade
- */
-class ParseException {
-  std::string message;
- public: 
-  ParseException(std::string message): message{message}{}
-  std::string what() const {return message;}
-};
 
 /**
  * Класс для хранения даты и времени
@@ -196,7 +187,7 @@ class ComtradeFile {
   float timemult_; // Коэффициент умножения для поля разности времени (метки времени) в файле данных. Критичные данные, действительное число
   std::string time_code_; // Код времени, определенный в стандарте IEEE Std C37.232-2007. Критичные данные, буквенно-цифровые
   std::string local_code_; // Разность времени между местным часовым поясом места проведения записи и UTC; формат тот же, что и для time_code. Критичные данные, буквенно-цифровые
-  int8_t tmq_code_; // Код признака качества времени таймера записывающего устройства. Критичные данные, шестнадцатеричное число
+  char tmq_code_; // Код признака качества времени таймера записывающего устройства. Критичные данные, шестнадцатеричное число
   int8_t leapsec_; // Показатель корректировочной секунды (leap second). Критичные данные, целое число
 
   std::vector<AnalogSignal> analog_vector; // Вектор состоящий из аналоговых сигналов
@@ -219,7 +210,7 @@ class ComtradeFile {
                float timemult,
                const std::string& time_code,
                const std::string& local_code,
-               int8_t tmq_code,
+               char tmq_code,
                int8_t leapsec);
 
   const std::string& GetStationName() const { 
@@ -270,7 +261,7 @@ class ComtradeFile {
   const std::string& GetLocalCode() const { 
     return local_code_; 
   }
-  const int8_t& GetTmqCode() const { 
+  const char& GetTmqCode() const { 
     return tmq_code_; 
   }
   const int8_t& GetLeapSec() const { 
@@ -281,14 +272,14 @@ class ComtradeFile {
    * @param an порядковый номер аналогового сигнала
    */
   const AnalogSignal& GetAnalogSignal(size_t an) const {
-    return analog_vector.at(an);
+    return analog_vector.at(an - 1);
   }
   /**
    * Функция возвращает дискретный сигнал с порядковым номером dn
    * @param dn порядковый номер дискретного сигнала
    */
   const DigitalSignal& GetDigitalSignal(size_t dn) const {
-    return digital_vector.at(dn);
+    return digital_vector.at(dn - 1);
   }
   /**
    * Функция добавляет аналоговый сигнал в конец вектора аналоговых сигналов

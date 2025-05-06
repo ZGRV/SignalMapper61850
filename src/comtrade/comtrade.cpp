@@ -10,6 +10,7 @@ namespace comtrade {
 const std::set<char> kSetPS {'P', 'p', 'S', 's'}; // Множество возможных значений атрибута PS
 const std::set<std::string> kSetRevYear {"1991", "1999", "2013"}; // Множество возможных значений атрибута rev_year
 const std::set<std::string> kSetFt {"ascii", "binary", "binary32", "float32"}; // Множество возможных значений атрибута ft
+const std::set<char> kSetTmqCode {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'F'}; // Множество возможных значений атрибута tmq_code
 
 
 /**
@@ -146,7 +147,7 @@ TimeMark::TimeMark(int8_t day, int8_t month, int32_t year, int8_t hours,
     CheckParam(mcseconds, mcseconds_, 0, 999999999);
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Datatime problem" << std::endl;
-    throw ParseException("Creating object error!");
+    throw std::runtime_error("Creating object error!");
   }
 }
 
@@ -174,7 +175,7 @@ AnalogSignal::AnalogSignal(int32_t An, const std::string& ch_id, const std::stri
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of analog signal: " 
     << An << std::endl;
-    throw ParseException("Creating object error!");
+    throw std::runtime_error("Creating object error!");
   }
 }
 
@@ -189,7 +190,7 @@ DigitalSignal::DigitalSignal(int32_t Dn, const std::string& ch_id, const std::st
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of digtal signal: " 
     << Dn << std::endl;
-    throw ParseException("Creating object error!");
+    throw std::runtime_error("Creating object error!");
   }
 }
 
@@ -210,7 +211,7 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
                            float timemult,
                            const std::string& time_code,
                            const std::string& local_code,
-                           int8_t tmq_code,
+                           char tmq_code,
                            int8_t leapsec) {
   size_t str_counter_for_exceptions = 2;
   try {
@@ -241,15 +242,15 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
     CheckParam(time_code, time_code_);
     CheckParam(local_code, local_code_);
     str_counter_for_exceptions++;
-    // CheckParam(tmq_code, tmq_code_, 0, 16);
-    // CheckParam(leapsec, leapsec_, 0, 3);
+    CompareParam(tmq_code, tmq_code_, kSetTmqCode);
+    CheckParam(leapsec, leapsec_, 0, 3);
 
     analog_vector.reserve(analog_count);
     digital_vector.reserve(digital_count);
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Creating object error!");
+    throw std::runtime_error("Creating object error!");
   }
 }
 

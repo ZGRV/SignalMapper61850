@@ -28,11 +28,11 @@ void TranformParam(std::ifstream& ifs, int8_t& param, char sep=',') {
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -60,11 +60,11 @@ void TranformParam(std::ifstream& ifs, int32_t& param, char sep=',', bool extra_
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -87,11 +87,11 @@ void TranformParam(std::ifstream& ifs, int64_t& param, char sep=',') {
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -114,11 +114,11 @@ void TranformParam(std::ifstream& ifs, float& param, char sep=',') {
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -134,14 +134,14 @@ void TranformParam(std::ifstream& ifs, char& param, char sep=',') {
   std::string buff;
   std::getline(ifs, buff, sep);
   try {
-    if(buff.empty()) {
-      throw std::invalid_argument("Lack of value!");
+    if(buff.empty() || buff.length() > 1) {
+      throw std::invalid_argument("Lack or incorrect value!");
     }
     param = buff[0];
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -164,11 +164,11 @@ void TranformParam(std::ifstream& ifs, bool& param, char sep=',') {
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line: " 
     << str_counter_for_exceptions << std::endl;
-    throw ParseException("Reading file error!");
+    throw std::runtime_error("Reading file error!");
   }
   if (sep == '\n') {
     str_counter_for_exceptions++;
@@ -180,7 +180,6 @@ void TranformParam(std::ifstream& ifs, bool& param, char sep=',') {
   * @return объект типа AnalogSignal
  */
 AnalogSignal AnSigParser(std::ifstream& ifs) {
-  std::string buff;
   int32_t An;
   std::string ch_id;
   std::string ph;
@@ -215,7 +214,6 @@ AnalogSignal AnSigParser(std::ifstream& ifs) {
   * @return объект типа DigitalSignal
  */
 DigitalSignal DigSigParser(std::ifstream& ifs) {
-  std::string buff;
   int32_t Dn;
   std::string ch_id;
   std::string ph;
@@ -234,7 +232,6 @@ DigitalSignal DigSigParser(std::ifstream& ifs) {
   * @return объект типа TimeMark
  */
 TimeMark TimeParser(std::ifstream& ifs) {
-  std::string buff;
   int8_t day;
   int8_t month;
   int32_t year;
@@ -255,7 +252,7 @@ TimeMark TimeParser(std::ifstream& ifs) {
 
 std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) {
   std::ifstream ifs;
-  ifs.open(file_name, std::ios::in | std::ios::binary);
+  ifs.open(file_name, std::ios::in);
   try {
     ifs.exceptions(ifs.failbit);
     std::string buffer;
@@ -276,7 +273,7 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     float timemult;
     std::string time_code;
     std::string local_code;
-    int8_t tmq_code;
+    char tmq_code;
     int8_t leapsec;
     std::vector<AnalogSignal> analog_vector;
     std::vector<DigitalSignal> digital_vector;
@@ -332,8 +329,8 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     return temp_comp_file;
   } catch(const std::ios_base::failure& e) {
     std::cerr << "Caught an ios_base::failure. File could not be opened!" << std::endl;
-  } catch (const ParseException& e) {
-    std::cerr << "Exception ParseException: " << e.what() << std::endl;
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Exception runtime_error: " << e.what() << std::endl;
   }
   return {};
 }
