@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <cmath>
 #include "comtrade.h"
 
 namespace comtrade {
@@ -251,6 +252,35 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line " 
     << str_counter_for_exceptions << std::endl;
     throw std::runtime_error("Creating object error!");
+  }
+}
+
+ComtradeData::ComtradeData(int32_t analog_count, int32_t digital_count, int32_t nrates, float samp, int64_t endsamp) {
+  analog_count_ = analog_count;
+  digital_count_ = digital_count;
+  nrates_ = nrates;
+  samp_ = samp;
+  endsamp_ = endsamp;
+  dataset_.reserve(endsamp_);
+  buffer_vec.resize(analog_count_ + static_cast<int32_t>(std::ceil(digital_count_ / 16.0) * 16));
+}
+
+void ComtradeData::AddData(int32_t timestamp, std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end) {
+  copy(begin, end, buffer_vec.begin());
+  dataset_.push_back(buffer_vec);
+  timestamp_map_[timestamp] = dataset_.size() - 1;
+}
+
+const std::vector<int32_t>& ComtradeData::GetDataLine(int32_t id, bool default_timestamp) const {
+  try {
+    if(default_timestamp) {    
+      return dataset_.at(timestamp_map_.at(id));
+    } else {
+      return dataset_.at(id-1);
+    }
+  } catch (const std::out_of_range& e) {
+    std::cerr << "Exception out_of_range: " << e.what() << std::endl;
+    throw std::runtime_error("Obtaining dataline error!");
   }
 }
 

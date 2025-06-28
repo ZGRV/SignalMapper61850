@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <unordered_map>
 #include <format>
 #include <limits>
 
@@ -193,8 +194,8 @@ class ComtradeFile {
   std::vector<AnalogSignal> analog_vector; // Вектор состоящий из аналоговых сигналов
   std::vector<DigitalSignal> digital_vector; // Вектор состоящий из цифровых сигналов
  public: 
- ComtradeFile() = default; 
- ComtradeFile(const std::string& station_name,
+  ComtradeFile() = default; 
+  ComtradeFile(const std::string& station_name,
                const std::string& rec_dev_id,
                const std::string& rev_year,
                int32_t TT,
@@ -295,6 +296,39 @@ class ComtradeFile {
   void PushDigital(DigitalSignal& signal) {
     digital_vector.push_back(signal);
   }
+};
+
+
+class ComtradeData {
+  std::vector<std::vector<int32_t>> dataset_;
+  std::unordered_map<int32_t, int32_t> timestamp_map_;
+  std::vector<int32_t> buffer_vec;
+  int32_t analog_count_;
+  int32_t digital_count_;
+  int32_t nrates_;
+  float samp_;
+  int64_t endsamp_;
+ public:
+  ComtradeData() = default;
+  ComtradeData(int32_t analog_count, int32_t digital_count, int32_t nrates, float samp, int64_t endsamp);
+  void AddData(int32_t timestamp, std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end);
+
+  const int32_t& GetAnalogCount() const { 
+    return analog_count_; 
+  }
+  const int32_t& GetDigitalCount() const { 
+    return digital_count_; 
+  }
+  const int32_t& GetNrates() const { 
+    return nrates_; 
+  }
+  const float& GetSamp() const { 
+    return samp_; 
+  }
+  const int64_t& GetEndSamp() const { 
+    return endsamp_; 
+  }
+  const std::vector<int32_t>& GetDataLine(int32_t number, bool default_timestamp=true) const;
 };
 
 } // comtrade

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include "comtrade.h"
 #include "comtrade_parser.h"
 
@@ -250,9 +251,9 @@ TimeMark TimeParser(std::ifstream& ifs) {
 }
 
 
-std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) {
+std::optional<std::pair<ComtradeFile, ComtradeData>> ComtradeParser::Parse(const std::string& file_name) {
   std::ifstream ifs;
-  ifs.open(file_name, std::ios::in);
+  ifs.open(file_name, std::ios::in|std::ios::binary);
   try {
     ifs.exceptions(ifs.failbit);
     std::string buffer;
@@ -311,13 +312,11 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     TranformParam(ifs, tmq_code);
     TranformParam(ifs, leapsec, '\n');
 
-    ifs.close();
-
     ComtradeFile temp_comp_file = ComtradeFile(station_name, rec_dev_id, rev_year, TT,
-                                              analog_count, digital_count, lf, nrates,
-                                              samp, endsamp, time_start, trigger_point,
-                                              ft, timemult, time_code, local_code,
-                                              tmq_code, leapsec);
+                                               analog_count, digital_count, lf, nrates,
+                                               samp, endsamp, time_start, trigger_point,
+                                               ft, timemult, time_code, local_code,
+                                               tmq_code, leapsec);
 
     for(AnalogSignal sig : analog_vector) {
       temp_comp_file.PushAnalog(sig);
@@ -326,11 +325,47 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
       temp_comp_file.PushDigital(sig);
     }
 
-    return temp_comp_file;
+    for(size_t pos=std::string::npos; pos == std::string::npos; ) {
+      std::getline(ifs, buffer);
+      pos = buffer.find("file type: DAT");
+    }
+
+    ComtradeData temp_comp_data = ComtradeData(temp_comp_file.GetAnalogCount(),
+                                               temp_comp_file.GetDigitalCount(),
+                                               temp_comp_file.GetNrates(),
+                                               temp_comp_file.GetSamp(),
+                                               temp_comp_file.GetEndSamp());
+    
+    std::vector<int32_t> buffer_vector(2 + temp_comp_data.GetAnalogCount() + static_cast<int32_t>(std::ceil(temp_comp_data.GetDigitalCount() / 16.0) * 16));
+    size_t length_dataline = 4 + 4 + 4 * temp_comp_data.GetAnalogCount() + 2 * static_cast<int32_t>(std::ceil(temp_comp_data.GetDigitalCount() / 16.0));
+    
+    for(size_t i=0; i!=temp_comp_data.GetEndSamp(); i++) {
+      ifs.read((char*)buffer_vector.data(), length_dataline);
+      for(int32_t& num : buffer_vector) {
+        num = ((num & 0xFF000000) >> 24) |
+              ((num & 0x00FF0000) >> 8)  |
+              ((num & 0x0000FF00) << 8)  |
+              ((num & 0x000000FF) << 24);
+      }  
+      
+      if (ifs.eof()) {
+        break;
+      }
+      
+      temp_comp_data.AddData(buffer_vector.at(1), buffer_vector.begin()+2, buffer_vector.end());
+    }
+    
+    ifs.close();
+
+    std::pair<ComtradeFile, ComtradeData> temp_pair {temp_comp_file, temp_comp_data};
+    return temp_pair;
+
   } catch(const std::ios_base::failure& e) {
     std::cerr << "Caught an ios_base::failure. File could not be opened!" << std::endl;
   } catch (const std::runtime_error& e) {
     std::cerr << "Exception runtime_error: " << e.what() << std::endl;
+  } catch (const std::out_of_range& e) {
+    std::cerr << "Exception out_of_range: " << e.what() << std::endl;
   }
   return {};
 }

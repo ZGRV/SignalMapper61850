@@ -1,10 +1,10 @@
 //
 // Created by zagorodnikov on 02.04.2025.
 //
+#include "comtrade.h"
 
 #ifndef COMTRADE_PARSER_H
 #define COMTRADE_PARSER_H
-#include "comtrade.h"
 
 namespace comtrade {
 
@@ -18,7 +18,7 @@ class ComtradeParser {
    * @param адрес файла .CFG стандарта IEC COMTRADE
    * @return объект типа std::optional<ComtradeFile>
    */
-  static std::optional<ComtradeFile> Parse(const std::string& file_name);
+  static std::optional<std::pair<ComtradeFile, ComtradeData>> Parse(const std::string& file_name);
 };
 
 } // comtrade
