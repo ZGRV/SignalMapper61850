@@ -119,11 +119,11 @@ inline void CompareParam(const char& value, char& param, const std::set<char>& k
   * @param value вводимое значения для иницилизируемого атрибута класса AnalogSignal или DigitalSignal
   * @param param ссылка на иницилизируемый атрибут класса AnalogSignal или DigitalSignal
   * @param keys множество допустимых значений атрибута типа std::string
-  * @param default_val есть ли значение по умолчанию при отсутвии данных в файле .cfg
+  * @param default_val есть ли значение по умолчанию при отсутвии данных в файле .CFG
   */
 inline void CompareParam(const std::string& value, std::string& param, 
                          const std::set<std::string>& keys, bool default_val=false) {
-  if(value == "" && default_val) {
+  if(value.empty() && default_val) {
     return;
   }
   std::string copy_val = value;
@@ -204,8 +204,7 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
                            int32_t digital_count,
                            float lf,
                            int32_t nrates,
-                           float samp,
-                           int64_t endsamp,
+                           const std::vector<std::pair<float, int64_t>>& vec_of_samps,
                            const TimeMark& time_start,
                            const TimeMark& trigger_point,
                            const std::string& ft,
@@ -213,7 +212,7 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
                            const std::string& time_code,
                            const std::string& local_code,
                            char tmq_code,
-                           int8_t leapsec) {
+                           int8_t leapsec): comtrade_dataset_() {
   size_t str_counter_for_exceptions = 2;
   try {
     CheckParam(station_name, station_name_, 0, 64);
@@ -231,9 +230,13 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
     str_counter_for_exceptions++;
     CheckParam(nrates, nrates_, 0, 999);
     str_counter_for_exceptions++;
-    CheckParam(samp, samp_);
-    CheckParam(endsamp, endsamp_, 1, 9999999999);
-    str_counter_for_exceptions++;
+    vec_of_samps_.reserve(nrates_);
+    for (const std::pair<float, int64_t>& pair : vec_of_samps) {
+      CheckParam(pair.first, samp_);
+      CheckParam(pair.second, endsamp_, 1, 9999999999);
+      str_counter_for_exceptions++;
+      vec_of_samps_.emplace_back(samp_, endsamp_);
+    }
     time_start_ = time_start;
     trigger_point_ = trigger_point;
     CompareParam(ft, ft_, kSetFt);
@@ -246,8 +249,8 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
     CompareParam(tmq_code, tmq_code_, kSetTmqCode);
     CheckParam(leapsec, leapsec_, 0, 3);
 
-    analog_vector.reserve(analog_count);
-    digital_vector.reserve(digital_count);
+    analog_vector_.reserve(analog_count);
+    digital_vector_.reserve(digital_count);
   } catch (const std::invalid_argument& e) {
     std::cerr << "Exception invalid_argument: " << e.what() << " Number of line " 
     << str_counter_for_exceptions << std::endl;
@@ -255,32 +258,102 @@ ComtradeFile::ComtradeFile(const std::string& station_name,
   }
 }
 
-ComtradeData::ComtradeData(int32_t analog_count, int32_t digital_count, int32_t nrates, float samp, int64_t endsamp) {
+ComtradeData::ComtradeData(int32_t analog_count, int32_t digital_count, int32_t nrates,
+                           const std::vector<std::pair<float, int64_t>>& vec_of_samps): vec_of_samps_(vec_of_samps) {
   analog_count_ = analog_count;
   digital_count_ = digital_count;
   nrates_ = nrates;
-  samp_ = samp;
-  endsamp_ = endsamp;
-  dataset_.reserve(endsamp_);
-  buffer_vec.resize(analog_count_ + static_cast<int32_t>(std::ceil(digital_count_ / 16.0) * 16));
+  size_t sum_of_endsamps = 0;
+  for(const std::pair<float, int64_t>& pair : vec_of_samps) {
+    sum_of_endsamps += pair.second;
+  }
+  dataset_.reserve(sum_of_endsamps);
+  buffer_vec_.resize(analog_count_ + static_cast<int32_t>(std::ceil(digital_count_ / 16.0)) / 2);
 }
 
-void ComtradeData::AddData(int32_t timestamp, std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end) {
-  copy(begin, end, buffer_vec.begin());
-  dataset_.push_back(buffer_vec);
-  timestamp_map_[timestamp] = dataset_.size() - 1;
+void ComtradeData::PushData(std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end) {
+  copy(begin, end, buffer_vec_.begin());
+  dataset_.push_back(buffer_vec_);
 }
 
-const std::vector<int32_t>& ComtradeData::GetDataLine(int32_t id, bool default_timestamp) const {
+const std::vector<int32_t>& ComtradeData::GetDataLineById(int32_t id) const {
   try {
-    if(default_timestamp) {    
-      return dataset_.at(timestamp_map_.at(id));
-    } else {
-      return dataset_.at(id-1);
-    }
+    return dataset_.at(id - 1);
   } catch (const std::out_of_range& e) {
     std::cerr << "Exception out_of_range: " << e.what() << std::endl;
     throw std::runtime_error("Obtaining dataline error!");
+  }
+}
+
+int32_t ComtradeData::GetAnalogSampById(int32_t id, int32_t an) const {
+  try {
+    if (an <= analog_count_) {
+      const std::vector<int32_t> &vec = GetDataLineById(id);
+      return vec.at(an - 1);
+    }
+    throw std::out_of_range("Analog sample id is higher than analog count!");
+  } catch (const std::out_of_range& e) {
+    std::cerr << "Exception out_of_range: " << e.what() << std::endl;
+    throw std::runtime_error("Obtaining analog sample error!");
+  }
+}
+
+bool ComtradeData::GetDigitalSampById(int32_t id, int32_t dn) const {
+  try {
+    if (dn <= digital_count_) {
+      const std::vector<int32_t> &vec = GetDataLineById(id);
+      int32_t dig_cell = vec.at(analog_count_ + (dn - 1) / 32);
+      dn = (dn - 1) % 32;
+      if (dn >= 16) {
+        bool ans = dig_cell & (0x00000001 << (dn - 16));
+        return ans;
+      }
+      bool ans = dig_cell & (0x00010000 << dn);
+      return ans;
+    }
+    throw std::out_of_range("Digital sample id is higher than digital count!");
+  } catch (const std::out_of_range& e) {
+    std::cerr << "Exception out_of_range: " << e.what() << std::endl;
+    throw std::runtime_error("Obtaining digital sample error!");
+  }
+}
+
+void ComtradeInitializer::PushAnalog(ComtradeFile& comp_file, const AnalogSignal& signal) {
+  static bool param_is_initialized = false;
+  if (!param_is_initialized) {
+    comp_file.PushAnalog(signal);
+    param_is_initialized = true;
+  } else {
+    std::cerr << "Analog signal already is initialized!" << std::endl;
+  }
+}
+void ComtradeInitializer::PushDigital(ComtradeFile& comp_file, const DigitalSignal& signal) {
+  static bool param_is_initialized = false;
+  if (!param_is_initialized) {
+    comp_file.PushDigital(signal);
+    param_is_initialized = true;
+  } else {
+    std::cerr << "Digital signal already is initialized!" << std::endl;
+  }
+}
+void ComtradeInitializer::PushDataset(ComtradeFile& comp_file, const ComtradeData& dataset) {
+  static bool param_is_initialized = false;
+  if (!param_is_initialized) {
+    comp_file.PushDataset(dataset);
+    param_is_initialized = true;
+  } else {
+    std::cerr << "Dataset already is initialized!" << std::endl;
+  }
+}
+void ComtradeInitializer::PushData(ComtradeData& comp_data,
+                                   std::vector<int32_t>::iterator begin,
+                                   std::vector<int32_t>::iterator end) {
+  static bool param_is_initialized = false;
+  if (!param_is_initialized) {
+    comp_data.PushData(begin, end);
+    param_is_initialized = true;
+  } else {
+    std::cerr << "Data already is initialized!" << std::endl;
   }
 }
 
