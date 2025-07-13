@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include "comtrade.h"
 #include "comtrade_parser.h"
 
@@ -206,7 +207,7 @@ AnalogSignal AnSigParser(std::ifstream& ifs) {
   TranformParam(ifs, primary);
   TranformParam(ifs, secondary);
   TranformParam(ifs, PS, '\n'); 
-  return AnalogSignal(An, ch_id, ph, ccbm, uu, a, b, skew, min, max, primary, secondary, PS);
+  return {An, ch_id, ph, ccbm, uu, a, b, skew, min, max, primary, secondary, PS};
 }
 /**
  * Данная функция создает и проверяет на соответствие стандарту IEC COMTRADE объект типа DigitalSignal
@@ -224,7 +225,7 @@ DigitalSignal DigSigParser(std::ifstream& ifs) {
   std::getline(ifs, ph, ',');
   std::getline(ifs, ccbm, ',');
   TranformParam(ifs, y, '\n');
-  return DigitalSignal(Dn, ch_id, ph, ccbm, y);
+  return {Dn, ch_id, ph, ccbm, y};
 }
 /**
  * Данная функция создает и проверяет на соответствие стандарту IEC COMTRADE объект типа TimeMark
@@ -246,17 +247,18 @@ TimeMark TimeParser(std::ifstream& ifs) {
   TranformParam(ifs, minutes, ':');
   TranformParam(ifs, seconds, '.');
   TranformParam(ifs, mcseconds, '\n');
-  return TimeMark(day, month, year, hours, minutes, seconds, mcseconds);
+  return {day, month, year, hours, minutes, seconds, mcseconds};
 }
 
 
 std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) {
+  // Открытие потока чтения файла
   std::ifstream ifs;
-  ifs.open(file_name, std::ios::in);
+  ifs.open(file_name, std::ios::in|std::ios::binary);
   try {
     ifs.exceptions(ifs.failbit);
     std::string buffer;
-
+    // Объявление буфферных переменных для чтения
     std::string station_name;
     std::string rec_dev_id;
     std::string rev_year;
@@ -267,8 +269,9 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     int32_t nrates;
     float samp;
     int64_t endsamp;
-    TimeMark time_start;
-    TimeMark trigger_point;
+    std::vector<std::pair<float, int64_t>> vec_of_samps;
+    TimeMark time_start{};
+    TimeMark trigger_point{};
     std::string ft;
     float timemult;
     std::string time_code;
@@ -278,6 +281,7 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     std::vector<AnalogSignal> analog_vector;
     std::vector<DigitalSignal> digital_vector;
 
+    // Чтение значений из файла в буфферные переменные
     std::getline(ifs, buffer);
     std::getline(ifs, station_name, ',');
     std::getline(ifs, rec_dev_id, ',');
@@ -297,9 +301,18 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     }
 
     TranformParam(ifs, lf, '\n');
-    TranformParam(ifs, nrates, '\n');  
-    TranformParam(ifs, samp);
-    TranformParam(ifs, endsamp, '\n');
+    TranformParam(ifs, nrates, '\n');
+    if(nrates <= 999) {
+      vec_of_samps.reserve(nrates);
+      for(int32_t i = 0; i <= nrates; i++) {
+        TranformParam(ifs, samp);
+        TranformParam(ifs, endsamp, '\n');
+        vec_of_samps.emplace_back(samp, endsamp);
+      }
+    } else {
+      throw std::invalid_argument("Invalid value of nrates");
+    }
+    
     time_start = TimeParser(ifs);
     trigger_point = TimeParser(ifs);
     std::getline(ifs, ft);
@@ -311,26 +324,59 @@ std::optional<ComtradeFile> ComtradeParser::Parse(const std::string& file_name) 
     TranformParam(ifs, tmq_code);
     TranformParam(ifs, leapsec, '\n');
 
-    ifs.close();
-
+    // Создание буферного объекта ComtradeFile
     ComtradeFile temp_comp_file = ComtradeFile(station_name, rec_dev_id, rev_year, TT,
-                                              analog_count, digital_count, lf, nrates,
-                                              samp, endsamp, time_start, trigger_point,
-                                              ft, timemult, time_code, local_code,
-                                              tmq_code, leapsec);
-
-    for(AnalogSignal sig : analog_vector) {
-      temp_comp_file.PushAnalog(sig);
+                                               analog_count, digital_count, lf, nrates,
+                                               vec_of_samps, time_start, trigger_point,
+                                               ft, timemult, time_code, local_code,
+                                               tmq_code, leapsec);
+    // Добавление прочитанных аналоговых и дискретных сигналов в создаваемый объект
+    for(AnalogSignal& sig : analog_vector) {
+      ComtradeInitializer::PushAnalog(temp_comp_file, sig);
     }
-    for(DigitalSignal sig : digital_vector) {
-      temp_comp_file.PushDigital(sig);
+    for(DigitalSignal& sig : digital_vector) {
+      ComtradeInitializer::PushDigital(temp_comp_file, sig);
     }
-
+    // Поиск участка в файле .CFF с описанием в формате файла .DAT
+    for(size_t pos=std::string::npos; pos == std::string::npos; ) {
+      std::getline(ifs, buffer);
+      pos = buffer.find("file type: DAT");
+    }
+    // Создание буферного объекта ComtradeData
+    ComtradeData temp_comp_data = ComtradeData(temp_comp_file.GetAnalogCount(),
+                                               temp_comp_file.GetDigitalCount(),
+                                               temp_comp_file.GetNrates(),
+                                               temp_comp_file.GetVectorOfSamps());
+    // Создание буферного вектора значений из выборки данных
+    std::vector<int32_t> buffer_vector(2 + temp_comp_file.GetAnalogCount() +
+      static_cast<int32_t>(std::ceil(temp_comp_file.GetDigitalCount() / 16.0) / 2));
+    // Расчет длины строки со значениями одной выборки данных
+    std::streamsize length_dataline = 4 + 4 + 4 * temp_comp_file.GetAnalogCount() +
+      2 * static_cast<int32_t>(std::ceil(temp_comp_file.GetDigitalCount() / 16.0));
+    // Чтение файла .DAT
+    while (!ifs.eof()) {
+      ifs.read((char*)buffer_vector.data(), length_dataline);
+      for(int32_t& num : buffer_vector) {
+        num = ((num & 0xFF000000) >> 24) |
+              ((num & 0x00FF0000) >> 8)  |
+              ((num & 0x0000FF00) << 8)  |
+              ((num & 0x000000FF) << 24);
+      }
+      // Копирование прочитанных данных в буферный объект
+      ComtradeInitializer::PushData(temp_comp_data, buffer_vector.begin()+2, buffer_vector.end());
+    }
+    // Закрытие потока чтения файла
+    ifs.close();
     return temp_comp_file;
+
   } catch(const std::ios_base::failure& e) {
-    std::cerr << "Caught an ios_base::failure. File could not be opened!" << std::endl;
+    std::cerr << "Caught an ios_base::failure. File could not be opened! " << e.what() << std::endl;
   } catch (const std::runtime_error& e) {
     std::cerr << "Exception runtime_error: " << e.what() << std::endl;
+  } catch (const std::out_of_range& e) {
+    std::cerr << "Exception out_of_range: " << e.what() << std::endl;
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "Exception invalid_argument: " << e.what() << std::endl;
   }
   return {};
 }

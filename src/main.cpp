@@ -8,17 +8,15 @@
 #include "comtrade/comtrade_parser.h"
 
 int main() {
-  //std::cout << "Hello, World!" << std::endl;
-  comtrade::ComtradeParser parser_instance;
   std::string file_name;
-  std::optional<comtrade::ComtradeFile> buff = parser_instance.Parse(file_name);
+  std::optional<comtrade::ComtradeFile> buff = comtrade::ComtradeParser::Parse(file_name);
   try {
     comtrade::ComtradeFile comp_file = buff.value();
     std::cout << comp_file.GetTriggerPoint().GetYear() << std::endl;
     std::cout << comp_file.GetDigitalSignal(8).GetChId() << std::endl;
-    std::cout << comp_file.GetEndSamp() << " " << comp_file.GetFt() << std::endl;
+    std::cout << comp_file.GetEndSamp(1) << " " << comp_file.GetAnalogCount() << std::endl;
   } catch(const std::bad_optional_access& e) {
-      std::cerr << "ComtrFile does not exist" << std::endl;
+      std::cerr << "Comtrade File does not exist" << std::endl;
   }
   return 0;
 }
